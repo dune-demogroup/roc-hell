@@ -58,6 +58,9 @@ reload_level:
 .not_magic
 	lea	1(a1),a1
 	dbra	d0,.loop2
+	
+	bsr		save_restore
+
 	rts
 
 inv_icon:
@@ -259,15 +262,16 @@ line:
 save_restore
 	lea		map,a5
 	lea		for_restore,a6
-	move.w	#(MAX_MAP_X*MAX_MAP_Y*2)/4-1,d7
+	move.w	#((MAX_MAP_X*MAX_MAP_Y*2)/4)-1,d7
 .loop
 	move.l	(a5)+,(a6)+
 	dbra	d7,.loop
 	rts
 restore_restore:
+
 	lea		map,a5
 	lea		for_restore,a6
-	move.w	#(MAX_MAP_X*MAX_MAP_Y*2)/4-1,d7
+	move.w	#((MAX_MAP_X*MAX_MAP_Y*2)/4)-1,d7
 .loop
 	move.l	(a6)+,(a5)+
 	dbra	d7,.loop
@@ -325,8 +329,8 @@ edit_boulder
 	move.b	#10,x_hero
 	move.b	#6,y_hero
 	
-	move.w	use_memory_disk,-(sp)
-	clr.w	use_memory_disk
+	tst.w	use_memory_disk
+	bne		.noboot
 	move.l	#boot_name,FILENAME_LOAD
 	bsr		open
 	blt		.noboot 
@@ -339,12 +343,11 @@ edit_boulder
 	move.w	pos_editor,pos_hero
 	bsr		close
 .noboot	
-	move.w	(sp)+,use_memory_disk
 	bsr		reload_level
+
 	clr.w	use_memory_disk
 	movem.l	palette,d0-d7
 	movem.l	d0-d7,$ffff8240.w
-	bsr		save_restore
 .loop	
 	bsr	vsync
 ****SOUND TEST
