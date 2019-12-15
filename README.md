@@ -9,9 +9,9 @@ More flags in BOULDER.S
 
 
 ## Tools:
-###CreateLevel
+### CreateLevel
 Simple level creator in c-like cpp
-###FileConvert:
+### FileConvert:
 Convert PI1 for fonts/sprites/imgs/palettes...+ random march
-###SoundGenerator: 
+### SoundGenerator: 
 Create YM sounds (50hz)
