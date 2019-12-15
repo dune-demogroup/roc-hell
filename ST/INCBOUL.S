@@ -1,0 +1,8 @@
+MASTER equ 0
+	IFEQ	MASTER
+	OPT	O+,D+,W-,S-
+	ENDC
+	IFNE	MASTER
+	OPT	O+,D-,W-,S-
+	ENDC
+	include "BOULDER.S"
