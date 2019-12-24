@@ -192,6 +192,72 @@ mouse_display dc.w 0
 
 
 ********************************
+*a0: screen
+*a1: text
+********************************
+display_text:
+	lea		font+32,a2
+	moveq	#7,d2
+	swap	d2
+	addq	#1,d2
+.loop
+	moveq	#0,d0
+	move.b	(a1)+,d0
+	beq		.end
+	move.w	d0,d1
+	sub.b	#'A',d0
+	bge		.ok_letter
+	move.w	d1,d0
+	sub.b	#"0",d0
+	bge		.ok_number
+	moveq	#0,d0
+V	SET	0
+	REPT	6
+	movep.l	d0,V(a0)
+V	SET		V+160
+	ENDR
+	add.w	d2,a0
+	swap	d2
+	bra		.loop
+.ok_number
+	add		#26,d0
+.ok_letter
+	move	d0,d1
+	lsl		#3,d0
+	lsl		#4,d1
+	add		d0,d1
+	lea		(a2,d1),a3
+ONE_COLOR_TEXT	equ	0
+	IFNE	ONE_COLOR_TEXT
+v	set 	0
+	rept	6
+	move.b	(a3)+,d5
+	or.b	(a3)+,d5
+	or.b	(a3)+,d5
+	or.b	(a3)+,d5
+	move.b	d5,v(a0)
+	move.b	d5,v+2(a0)
+	move.b	d5,v+4(a0)
+	move.b	d5,v+6(a0)
+v 	set 	v+160
+	endr
+	ENDC
+	IFEQ	ONE_COLOR_TEXT
+v	set 	0
+	rept	6
+	move.l	(a3)+,d5
+	movep.l	 d5,v(a0)
+v 	set 	v+160
+	endr
+	ENDC
+	add.w	d2,a0
+	swap	d2
+	bra		.loop
+.end
+	rts
+
+
+********************************
 ********************************
 scroll:
 	lea		scroll_bitmap,a1
@@ -316,6 +382,7 @@ scroll_bitmap ds.b	6*160
 ******************************** 
 vbl:
 	movem.l	d0-a6,-(sp)
+
 	move.l	timerb_rout,$120.w
 
 	move.b	#7,$fffffa21.w

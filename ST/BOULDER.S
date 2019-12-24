@@ -158,7 +158,30 @@ intro_palette:
 	move.l #$7600643,$ffff8258.w
 	move.l #$5340777,$ffff825c.w
 	clr.b $fffffa1b.w
+	tst.b	press_p_time
+	bmi		.no_text
+	move.b #50-6,$fffffa21.w
+	move.b #8,$fffffa1b.w
+	move.l #.p194,$120.w
+	bclr #0,$fffffa0f.w
+	rte
+.no_text
 	move.b #50,$fffffa21.w
+	move.b #8,$fffffa1b.w
+	move.l #.p0,$120.w
+	bclr #0,$fffffa0f.w
+	rte
+.p194
+	move.l #$2120233,$ffff8240.w
+	move.l #$3450556,$ffff8244.w
+	move.l #$7660776,$ffff8248.w
+	move.l #$6200740,$ffff824c.w
+	move.l #$1310552,$ffff8250.w
+	move.l #$7760765,$ffff8254.w
+	move.l #$7550624,$ffff8258.w
+	move.l #$4130212,$ffff825c.w
+	clr.b $fffffa1b.w
+	move.b #6,$fffffa21.w
 	move.b #8,$fffffa1b.w
 	move.l #.p0,$120.w
 	bclr #0,$fffffa0f.w
@@ -208,6 +231,12 @@ menu_text
 end_game_text
 	dc.b	"; TYPE Y TO GO TO INTRO SCREEN ;; ESC TO QUIT THE GAME ;; ALL OTHER KEY CONTINUE :::::::    ",0
 	even
+press_p_text
+	dc.b	":::: PRESS P TO PLAY ::::", 0
+	even
+press_p_time
+	dc.b	0
+	even
 prg:
 	clr.b	scroll_active
 	IFNE	EDITOR
@@ -228,12 +257,41 @@ prg:
 	bsr	close
 	bsr vsync
 	bsr	swap
-
+	move.l	screenphy,a0
+	lea		160*194+32(a0),a0
+	move.l	screen,a1
+	rept	6
+	movem.l	(a0),d0-d7/a2-a6
+	movem.l	d0-d7/a2-a6,(a1)
+	movem.l	8*4+5*4(a0),d0-d7/a2-a6
+	movem.l	d0-d7/a2-a6,8*4+5*4(a1)
+	lea		160(a0),a0
+	lea		160(a1),a1
+	endr
+	*bsr	restore_vec
 .intro
 	bsr vsync
+	move.l	screenphy,a0
+	lea		160*194+32(a0),a0
+	subq.b	#8,press_p_time
+	bmi		.no_text
+	lea		press_p_text,a1
+	bsr		display_text
+	bra		.yes_text
+.no_text
+	move.l	screen,a1
+	rept	6
+	movem.l	(a1),d0-d7/a2-a6
+	movem.l	d0-d7/a2-a6,(a0)
+	movem.l	8*4+4*5(a1),d0-d7/a2-a6
+	movem.l	d0-d7/a2-a6,8*4+4*5(a0)
+	lea		160(a0),a0
+	lea		160(a1),a1
+	endr
+.yes_text
 	move.b	#7,$fffffa21.w
 	move.b	#8,$fffffa1b.w
-	bclr #0,$fffffa0f.w
+	bclr	#0,$fffffa0f.w
 
 	cmp.b	#PLAY_KEY,thekey
 	bne		.intro
