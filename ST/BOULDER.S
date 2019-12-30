@@ -268,7 +268,6 @@ prg:
 	lea		160(a0),a0
 	lea		160(a1),a1
 	endr
-	*bsr	restore_vec
 .intro
 	bsr vsync
 	move.l	screenphy,a0
@@ -379,7 +378,11 @@ prg_boulder:
 	ENDC
 
 	bsr	vsync
+
     IFNE	PROFILE
+	move.w	#10000,d0
+.loop_nothing
+	dbra	d0,.loop_nothing
 	move.w	#7,$ffff8240.w
     ENDC
 
@@ -697,7 +700,7 @@ prg_boulder:
 **********************************************************************
 *CHECK EACH VISIBLE CELL AND ANIMATE
 **********************************************************************
-*TODO : ?bra/bsr to type? to profile
+*DONE : optim with jump table (== quasi constant 2 vbls)
 .animvisible:
 	bsr	get_displayed_map
 	lea	map,a0
@@ -706,25 +709,49 @@ prg_boulder:
 	lea	(a1,d1),a1
 	moveq	#0,d2
 	moveq	#TILE_COUNT_HEIGHT-1,d7
+	lea		.jmp_anim_table,a6
+	bra		.loopanimvisible_y
+.jmp_anim_table
+	REPT	5
+	dc.w	.anim_nothing-.anim_entry	
+	ENDR
+	dc.w	.anim_diamond-.anim_entry	*5
+	dc.w	.anim_nothing-.anim_entry
+	dc.w	.anim_firefly-.anim_entry	*7
+	dc.w	.anim_nothing-.anim_entry
+	dc.w	.anim_nothing-.anim_entry	
+	dc.w	.anim_butterfly-.anim_entry	*10
+	dc.w	.anim_ameoba-.anim_entry	*11
+	dc.w	.anim_nothing-.anim_entry
+	dc.w	.anim_magic_brick-.anim_entry	*13
+	REPT	8
+	dc.w	.anim_nothing-.anim_entry
+	ENDR
+	dc.w	.anim_devils1-.anim_entry	*22
+	dc.w	.anim_devils2-.anim_entry	*23
+	dc.w	.anim_slime-.anim_entry	*24
+	REPT 9
+	dc.w	.anim_nothing-.anim_entry
+	ENDR
 .loopanimvisible_y:
 	moveq	#TILE_COUNT_WIDTH-1,d6
 .loopanimvisible_x:
+	moveq	#0,d0
 	move.b	(a0)+,d0
-	cmp.b	#TYPE_AMOEBA,d0
-	bne	.not_amoeba
+	add.w	d0,d0
+	move.w	(a6,d0),d0
+	jmp		.anim_entry(PC,d0.l)
+.anim_entry
+.anim_ameoba
 	addq.b	#1,(a1)+
 	moveq	#1,d2
 	dbra	d6,.loopanimvisible_x	
 	bra		.end_loopanimvisible_x
-.not_amoeba
-	cmp.b	#TYPE_SLIME,d0
-	bne	.not_slime
+.anim_slime
 	addq.b	#1,(a1)+
 	dbra	d6,.loopanimvisible_x	
 	bra		.end_loopanimvisible_x
-.not_slime
-	cmp.b	#TYPE_DIAMOND,d0
-	bne		.not_diamond
+.anim_diamond
 	move.b	(a1),d1
 	addq.b	#1,d1
 	cmp.b	#6*4,d1
@@ -733,11 +760,9 @@ prg_boulder:
 	move.b	d1,(a1)+
 	dbra	d6,.loopanimvisible_x
 	bra		.end_loopanimvisible_x
-.not_diamond
-	cmp.b	#TYPE_MAGIC_BRICK,d0
-	bne		.not_magic_brick
+.anim_magic_brick
 	move.b	(a1),d1
-	beq		.not_magic_brick
+	beq		.dont_loop_magic_bricks
 	addq.b	#1,d1
 	cmp.b	#(1+4)*4,d1
 	blt		.dont_loop_magic_bricks	
@@ -746,27 +771,21 @@ prg_boulder:
 	move.b	d1,(a1)+
 	dbra	d6,.loopanimvisible_x
 	bra		.end_loopanimvisible_x
-.not_magic_brick
-	cmp.b	#TYPE_BUTTERFLY,d0
-	bne		.not_butterfly
+.anim_butterfly
 	move.b	(a1),d1
 	addq	#1,d1
 	and.b	#$F,d1
 	move.b	d1,(a1)+
 	dbra	d6,.loopanimvisible_x
 	bra		.end_loopanimvisible_x
-.not_butterfly
-	cmp.b	#TYPE_FIREFLY,d0
-	bne		.not_firefly
+.anim_firefly
 	move.b	(a1),d1
 	addq	#1,d1
 	and.b	#$F,d1
 	move.b	d1,(a1)+
 	dbra	d6,.loopanimvisible_x
 	bra		.end_loopanimvisible_x
-.not_firefly
-	cmp.b	#TYPE_DEVIL1,d0
-	bne		.not_devil1
+.anim_devils1
 	move.b	(a1),d1
 	move.w	d1,d3
 	addq	#1,d1
@@ -776,9 +795,7 @@ prg_boulder:
 	move.b	d1,(a1)+
 	dbra	d6,.loopanimvisible_x
 	bra		.end_loopanimvisible_x
-.not_devil1
-	cmp.b	#TYPE_DEVIL2,d0
-	bne		.not_devil2
+.anim_devils2
 	move.b	(a1),d1
 	move.w	d1,d3
 	addq	#1,d1
@@ -788,7 +805,7 @@ prg_boulder:
 	move.b	d1,(a1)+
 	dbra	d6,.loopanimvisible_x
 	bra		.end_loopanimvisible_x
-.not_devil2
+.anim_nothing
 	addq.l	#1,a1	
 	dbra	d6,.loopanimvisible_x
 .end_loopanimvisible_x
@@ -797,6 +814,9 @@ prg_boulder:
 	dbra	d7,.loopanimvisible_y
 
 
+	IFNE	PROFILE
+	move.w	#$555,$ffff8240.w
+	ENDC
 ******************************************************
 *IF SOME AMOEBAS ARE VISIBLE, WE HAVE A SOUND
 ******************************************************

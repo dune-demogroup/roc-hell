@@ -47,7 +47,9 @@ play_sounds macro
 	dbra	d7,.\@loop_sound
 	move.w	#$7ff,d0
 	and.b	d2,d0		
+	IFEQ	PLAY_MUSIC
 	movep	d0,(a1)
+	ENDC
 	endm
 
 stop_sounds macro
@@ -90,13 +92,20 @@ stop_sounds macro
 	lsl.l	#8,d1
 	move.l	d1,a0
 	
+
 	move.l	$70.w,svbl
 	move.l	$118.w,skey
 	clr.w	$468.w
 	bsr	init_vec
+	IFNE	PLAY_MUSIC
+	bsr		music
+	ENDC
+
 	bsr	init
 
 	bsr	prg	
+
+
 	clr.w	joy_buttons	
 	bsr	vsync
 	move.b oldres,$ffff8260.w
@@ -106,6 +115,11 @@ stop_sounds macro
 	movem.l	oldpal,d0-d7
 	movem.l	d0-d7,$ffff8240.w
 	bsr restore_vec
+	IFNE	PLAY_MUSIC
+	bsr		music+4
+	ENDC
+
+
 	move.l	ssp,-(sp)
 	move.w	#$20,-(sp)
 	trap	#1
@@ -384,7 +398,6 @@ vbl:
 	movem.l	d0-a6,-(sp)
 
 	move.l	timerb_rout,$120.w
-
 	move.b	#7,$fffffa21.w
 	move.b	#8,$fffffa1b.w
 	move.w	#-1,flagvbl
@@ -396,7 +409,9 @@ vbl:
 	movep.w	(a0),d1
 	lsl.l	#8,d1
 	move.l	d1,a0
-
+	IFNE	PLAY_MUSIC
+	bsr		music+8
+	ENDC
 	IFNE	NEED_MOUSE_CURSUR
 	move mouse_display(pc),d0
 	beq .no_mouse
