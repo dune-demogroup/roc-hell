@@ -6,6 +6,40 @@
  */
 #include <stdio.h>
 #include <cstdlib>
+#include <stdint.h>
+#define BEGIN_NAMED_ENUM(x)\
+	struct E##x {
+
+#define ENUM_MEMBER(x)\
+	static const intptr_t x = (const intptr_t) #x;
+
+#define END_NAMED_ENUM(x)\
+	}; static E##x x;
+
+BEGIN_NAMED_ENUM(NAmedEnum)
+	ENUM_MEMBER(E0)
+	ENUM_MEMBER(E1)
+	ENUM_MEMBER(E2)
+	ENUM_MEMBER(E3)
+END_NAMED_ENUM(NAmedEnum)
+
+void TestEnum(intptr_t x)
+{
+	switch (x)
+	{
+	case NAmedEnum.E0:
+		break;
+	case NAmedEnum.E1:
+		break;
+	case NAmedEnum.E2:
+		break;
+	case NAmedEnum.E3:
+		break;
+	default:
+		break;
+	}
+}
+
 typedef unsigned long long int  uint64;
 typedef unsigned int            uint32;
 typedef unsigned short          uint16;
